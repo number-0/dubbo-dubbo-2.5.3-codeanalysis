@@ -32,16 +32,28 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
 public class AdaptiveExtensionFactory implements ExtensionFactory {
     
     private final List<ExtensionFactory> factories;
-    
+
+    /**
+     * 把其他ExtensionFactory扩展实现类实例，加入factories list
+     * AdaptiveExtensionFactory、SpiExtensionFactory、SpringExtensionFactory
+     */
     public AdaptiveExtensionFactory() {
         ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
         List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
+        //getSupportedExtensions()返回的是非包装类扩展，非Adaptive扩展
         for (String name : loader.getSupportedExtensions()) {
             list.add(loader.getExtension(name));
         }
         factories = Collections.unmodifiableList(list);
     }
 
+    /**
+     * 遍历factories，通过factory.getExtension(type, name)获取bean
+     * @param type object type.
+     * @param name object name.
+     * @param <T>
+     * @return
+     */
     public <T> T getExtension(Class<T> type, String name) {
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);
