@@ -30,6 +30,7 @@ import com.alibaba.dubbo.rpc.listener.ListenerExporterWrapper;
 import com.alibaba.dubbo.rpc.listener.ListenerInvokerWrapper;
 
 /**
+ * Protocol的包装类
  * ListenerProtocol
  * 
  * @author william.liangf

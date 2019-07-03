@@ -216,7 +216,16 @@ public abstract class AbstractConfig implements Serializable {
     protected static void appendParameters(Map<String, String> parameters, Object config) {
         appendParameters(parameters, config, null);
     }
-    
+
+    /**
+     * 整体逻辑：将两类方法的返回值置入map，通过反射得到值
+     * （1）将对象中，"public修饰 无参方法 返回类型为原始类型 get或is方法(不包含getClass方法)"，这样的方法的返回值置入map，
+     *          key: 为方法get后边小写部分或者方法上@Parameter注解的key属性，val:方法的返回值
+     * （2）将对象中，"public修饰 无参方法 返回类型为Map getParameters方法"，这样的方法的返回值置入map
+     * @param parameters
+     * @param config
+     * @param prefix
+     */
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         if (config == null) {

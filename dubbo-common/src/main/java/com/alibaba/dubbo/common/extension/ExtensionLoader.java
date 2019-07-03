@@ -892,9 +892,12 @@ public class ExtensionLoader<T> {
     }
     
     private Class<?> createAdaptiveExtensionClass() {
+        //生成@Adaptive类源码字符串
         String code = createAdaptiveExtensionClassCode();
         ClassLoader classLoader = findClassLoader();
+        //通过SPI获取java编译器
         com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
+        //编译源码返回Class
         return compiler.compile(code, classLoader);
     }
     

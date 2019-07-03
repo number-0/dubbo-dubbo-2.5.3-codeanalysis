@@ -29,6 +29,7 @@ import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcException;
 
 /**
+ * Protocol的包装类
  * ListenerProtocol
  * 
  * @author william.liangf
@@ -48,24 +49,14 @@ public class ProtocolFilterWrapper implements Protocol {
         return protocol.getDefaultPort();
     }
 
-    public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
-        if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
-            return protocol.export(invoker);
-        }
-        return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
-    }
-
-    public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-        if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-            return protocol.refer(type, url);
-        }
-        return buildInvokerChain(protocol.refer(type, url), Constants.REFERENCE_FILTER_KEY, Constants.CONSUMER);
-    }
-
-    public void destroy() {
-        protocol.destroy();
-    }
-
+    /**
+     * 实例化过滤器链
+     * @param invoker
+     * @param key
+     * @param group
+     * @param <T>
+     * @return
+     */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
@@ -104,5 +95,38 @@ public class ProtocolFilterWrapper implements Protocol {
         }
         return last;
     }
-    
+
+    /**
+     * 暴露前，执行过滤器链
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
+    public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+            return protocol.export(invoker);
+        }
+        return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
+    }
+
+    /**
+     * 调用前执行过滤器链
+     * @param type 服务的类型
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
+    public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+            return protocol.refer(type, url);
+        }
+        return buildInvokerChain(protocol.refer(type, url), Constants.REFERENCE_FILTER_KEY, Constants.CONSUMER);
+    }
+
+    public void destroy() {
+        protocol.destroy();
+    }
+
 }

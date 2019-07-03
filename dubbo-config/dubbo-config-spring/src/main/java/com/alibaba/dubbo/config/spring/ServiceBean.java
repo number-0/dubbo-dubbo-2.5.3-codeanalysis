@@ -111,7 +111,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         }
     }
 
-    //是否延迟暴露服务
+    //是否延迟暴露服务, dubbo:provider中delay属性的配置
     private boolean isDelay() {
         // 获取 delay
         Integer delay = getDelay();
@@ -124,6 +124,13 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return supportedApplicationListener && (delay == null || delay.intValue() == -1);
     }
 
+    /**
+     * 当前servicebean属性构造完成后，执行暴露逻辑
+     * 整体逻辑：
+     * （1）校验配置是否为空
+     * （2）不是延迟暴露的情况下暴露服务export()
+     * @throws Exception
+     */
     @SuppressWarnings({ "unchecked", "deprecation" })
 	public void afterPropertiesSet() throws Exception {
 	    //Spring启动后，ProviderConfig不可能为空，因为dubbo配置文件已经解析完成，如果为空则重新设置一次

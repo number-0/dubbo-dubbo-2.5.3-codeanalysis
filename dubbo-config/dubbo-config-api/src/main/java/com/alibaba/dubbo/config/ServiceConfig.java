@@ -114,6 +114,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 		return unexported;
 	}
 
+    /**
+     * 服务暴露整体逻辑：
+     * （1）<dubbo:provider> export属性， 判断是否要暴露服务，export=false代表不暴露
+     * （2）<dubbo:provider> delay属性，delay>0延迟暴露，否则为立即暴露
+     */
     public synchronized void export() {
         if (provider != null) {
             if (export == null) {
@@ -130,7 +135,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             return;
         }
 
-        //delay > 0，延迟暴露，启动一个线程延时暴露
+        //delay > 0，延迟暴露，启动一个线程延迟暴露
         if (delay != null && delay > 0) {
             Thread thread = new Thread(new Runnable() {
                 public void run() {
@@ -150,7 +155,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             doExport();
         }
     }
-    
+
+    /**
+     * 整体逻辑：
+     * （1）属性校验（dubbo配置文件标签对应的对象是否为空），为空则赋值
+     * （2）暴露服务doExportUrls();
+     */
     protected synchronized void doExport() {
         if (unexported) {
             throw new IllegalStateException("Already unexported!");
@@ -298,10 +308,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     	}
         unexported = true;
     }
-    
+
+    /**
+     * 执行服务的暴露
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void doExportUrls() {
-        //加载并获取注册中心的配置
+        //加载并获取注册中心的配置，使用URL表示
         List<URL> registryURLs = loadRegistries(true);
         //protocols支持多协议发布，并在每个协议下暴露服务
         for (ProtocolConfig protocolConfig : protocols) {
@@ -309,6 +322,21 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 暴露服务到每个协议下的流程
+     * 整体逻辑：
+     * （1）一些配置属性的检查和赋值
+     * （2）根据scope判断要导出的目的地
+     *      * scope == none，不导出服务
+     *      * scope != remote，需要导出到本地
+     *          * exportLocal(URL url)
+     *      * scope != local，需要导出到远程
+     *          * 遍历所有的注册中心，导出服务
+     *      * scope == null，既要导出到本地也要导出到远程
+     *
+     * @param protocolConfig
+     * @param registryURLs
+     */
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         //获取protocol
         String name = protocolConfig.getName();
@@ -484,12 +512,16 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             protocolConfig.setRegister(false);
             map.put("notify", "false");
         }
+
+
         // 导出服务
+
+
         String contextPath = protocolConfig.getContextpath();
         if ((contextPath == null || contextPath.length() == 0) && provider != null) {
             contextPath = provider.getContextpath();
         }
-        //根据协议名称，主机，端口，路径，以及map参数列表创建URL
+        //根据协议名称，主机，端口，路径，以及map参数列表创建URL，此URL为当前服务的URL
         URL url = new URL(name, host, port, (contextPath == null || contextPath.length() == 0 ? "" : contextPath + "/") + path, map);
 
         //根据协议获取ConfiguratorFactory接口实现，如果有，则调用实现类configure方法处理url
@@ -499,45 +531,50 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
 
-        //如果scope配置为none则为不暴露，local，remote，该属性可在ServiceConfig中指定，默认为 null，即暴露本地也暴露远程
+        //如果scope配置为none则为不暴露，local(本地暴露)，remote(远程暴露)，该属性可在ServiceConfig中指定，默认为 null，即暴露本地也暴露远程
         String scope = url.getParameter(Constants.SCOPE_KEY);
-        //scope配置为none不暴露服务
+        //配置为scope=none，什么都不做
         if (! Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
 
-            //配置不是remote的情况下做本地暴露 (配置为remote，则表示只暴露远程服务)
+            //配置不为scope=remote，则需要做本地暴露
             if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
-                //仅将服务暴露在本地jvm中
+                //*************  本地暴露
                 exportLocal(url);
             }
-            //如果配置不是local则暴露为远程服务.(配置为local，则表示只暴露远程服务)
+            //配置不为scope=local，则需要做远程暴露
             if (! Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope) ){
                 if (logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
-                //如果注册中心URL列表不为空，并且服务URL的register参数为true
+                //如果注册中心URL列表不为空，并且当前服务的URL的register参数为true
                 if (registryURLs != null && registryURLs.size() > 0
                         && url.getParameter("register", true)) {
+
                     //会向每一个注册中心暴露服务
                     for (URL registryURL : registryURLs) {
                         url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
-                        //加载监视器链接
+                        //加载监视器链接URL，对应标签<dubbo:monitor>
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
-                            // 将监视器链接作为参数添加到 url 中
+                            //将监视器链接URL作为参数添加到 当前服务url 中
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
                             logger.info("Register dubbo service " + interfaceClass.getName() + " url " + url + " to registry " + registryURL);
                         }
-                        // 为服务提供类(ref)生成 Invoker
+
+                        // ref：接口实现类引用
+                        // 为服务提供类(ref)生成Invoker
                         //Invoker 是实体域，它是 Dubbo 的核心模型，其它模型都向它靠扰，或转换成它，它代表一个可执行体，可向它发起 invoke 调用，它有可能是一个本地的实现，也可能是一个远程的实现，也可能一个集群实现。
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
 
-                        // 导出服务，并生成 Exporter
+                        //*************  远程暴露服务，并生成 Exporter
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }
+
                 } else {
+                    //不存在注册中心，仅导出服务
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
 
                     Exporter<?> exporter = protocol.export(invoker);
@@ -549,11 +586,15 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
 
+    /**
+     * 本地暴露服务
+     * @param url
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void exportLocal(URL url) {
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
             URL local = URL.valueOf(url.toFullString())
-                    .setProtocol(Constants.LOCAL_PROTOCOL)
+                    .setProtocol(Constants.LOCAL_PROTOCOL) //设置为injvm协议
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
             Exporter<?> exporter = protocol.export(

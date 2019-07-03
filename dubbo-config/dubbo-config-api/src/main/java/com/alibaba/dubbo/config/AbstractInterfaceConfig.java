@@ -154,9 +154,18 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
     }
-    
+
+    /**
+     * 加载并获取注册中心的配置，用List<URL>表示
+     * 整体逻辑：
+     * （1）校验是否存在注册中心配置类RegistryConfig
+     * （3）构建注册中心链接URL
+     * （4）将注册中心链接URL添加到List<URL>，根据条件决定是否添加
+     * @param provider 是否是provider
+     * @return
+     */
     protected List<URL> loadRegistries(boolean provider) {
-        //校验是否存在注册中心
+        //检测是否存在注册中心配置类RegistryConfig，不存在则抛出异常
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
         if (registries != null && registries.size() > 0) {
@@ -191,11 +200,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                             map.put("protocol", "dubbo");
                         }
                     }
-                    //解析得到urls
+                    //解析得到urls，address可能包含多个注册中心ip
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
                         //遍历URLs集合，为每个URL的registry参数设置为url.getProtocol()，URL设置为registry协议
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
+                        //将URL协议头设置为registry
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
                         //如果是provider并且register参数为true，或者，不是provider并且subscribe为true，将符合条件的添加到registryList
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
