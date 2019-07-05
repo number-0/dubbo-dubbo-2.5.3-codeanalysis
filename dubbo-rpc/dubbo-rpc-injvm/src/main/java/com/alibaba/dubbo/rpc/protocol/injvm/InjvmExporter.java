@@ -36,6 +36,9 @@ class InjvmExporter<T> extends AbstractExporter<T> {
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
+//         Map<String, Exporter<?>> exporterMap是InjvmProtocol的成员变量
+//            key：invoker.getUrl().getServiceKey()
+//            val：自身Exporter
         exporterMap.put(key, this);
     }
 

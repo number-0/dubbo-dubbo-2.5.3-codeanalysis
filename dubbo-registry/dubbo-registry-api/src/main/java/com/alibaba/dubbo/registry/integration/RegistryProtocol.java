@@ -101,21 +101,35 @@ public class RegistryProtocol implements Protocol {
     private final Map<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<String, ExporterChangeableWrapper<?>>();
     
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
-    
+
+    /**
+     * 远程导出服务整体实现逻辑：
+     * （1）调用doLocalExport导出服务
+     * （2）向注册中心注册服务
+     * （3）向注册中心订阅 override 数据
+     * （4）创建并返回Exporter
+     * @param originInvoker
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        //export invoker
+        //1. export invoker：暴露服务，Invoker中封装了provider的方法调用，详见前边的getInvoker的分析
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
-        //registry provider
+
+        //2. registry provider：获取对应注册中心操作对象，比如ZookeeperRegistry
         final Registry registry = getRegistry(originInvoker);
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
-        registry.register(registedProviderUrl);
-        // 订阅override数据
+        registry.register(registedProviderUrl); //向注册中心注册服务
+
+        //3. 订阅override数据
         // FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
-        //保证每次export都返回一个新的exporter实例
+
+        //4. 保证每次export都返回一个新的exporter实例
         return new Exporter<T>() {
             public Invoker<T> getInvoker() {
                 return exporter.getInvoker();
@@ -140,16 +154,37 @@ public class RegistryProtocol implements Protocol {
             }
         };
     }
-    
+
+    /**
+     * 导出服务整体逻辑：
+     * （1）从缓存获取exporter：ExporterChangeableWrapper，存在则返回
+     * （2）缓存不存在
+     * （3）创建Invoker的委托类对象InvokerDelegete
+     * （4）调用DubboProtocol的export方法导出服务，并构建exporter：ExporterChangeableWrapper
+     * （5）返回exporter：ExporterChangeableWrapper
+     * @param originInvoker
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T>  doLocalExport(final Invoker<T> originInvoker){
+        //通过originInvoker构造缓存key
         String key = getCacheKey(originInvoker);
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
                 if (exporter == null) {
+                    //1. 创建Invoker的委托类对象InvokerDelegete
+                    //InvokerDelegete是RegistryProtocol类的静态内部类，继承InvokerWrapper，最超类为Invoker接口
+                    //URL是通过getProviderUrl(originInvoker)返回的，此时url的协议已是dubbo，即服务暴露的协议
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+
+                    //2. 调用DubboProtocol的export方法导出服务
+                    //ExporterChangeableWrapper是RegistryProtocol的私有内部类，实现了Exporter接口
+                    //通过调用它的构造方法(Exporter<T> exporter, Invoker<T> originInvoker)构造exporterWrapper实例
+                    //而这里传入的exporter是通过(Exporter<T>) protocol.export(invokerDelegete)语句创建
+                    //由上一步知道，这里的invokerDelegete里url属性的protocol协议已经是dubbo
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>)protocol.export(invokerDelegete), originInvoker);
                     bounds.put(key, exporter);
                 }

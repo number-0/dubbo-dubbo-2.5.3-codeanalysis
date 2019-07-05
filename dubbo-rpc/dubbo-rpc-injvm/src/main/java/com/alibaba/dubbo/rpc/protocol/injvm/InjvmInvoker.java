@@ -55,6 +55,7 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
 	}
 
 	public Result doInvoke(Invocation invocation) throws Throwable {
+        //通过exporterMap获取exporter
         Exporter<?> exporter = InjvmProtocol.getExporter(exporterMap, getUrl());
         if (exporter == null)  {
             throw new RpcException("Service [" + key + "] not found.");

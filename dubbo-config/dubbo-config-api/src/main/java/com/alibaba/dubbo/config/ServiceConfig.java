@@ -566,9 +566,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         // ref：接口实现类引用
                         // 为服务提供类(ref)生成Invoker
                         //Invoker 是实体域，它是 Dubbo 的核心模型，其它模型都向它靠扰，或转换成它，它代表一个可执行体，可向它发起 invoke 调用，它有可能是一个本地的实现，也可能是一个远程的实现，也可能一个集群实现。
+                        //proxyFactory是ProxyFactory$Adpative实例(spi机制)
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
 
                         //*************  远程暴露服务，并生成 Exporter
+                        //protocol是Protocol$Adpative的实例(spi机制)
                         Exporter<?> exporter = protocol.export(invoker);
                         exporters.add(exporter);
                     }
@@ -586,6 +588,23 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
 
+    /*
+     public com.alibaba.dubbo.rpc.Exporter export(com.alibaba.dubbo.rpc.Invoker arg0) throws com.alibaba.dubbo.rpc.RpcException {
+        if (arg0 == null)
+            throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument == null");
+        if (arg0.getUrl() == null)
+            throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument getUrl() == null");
+        com.alibaba.dubbo.common.URL url = arg0.getUrl();
+        String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        if (extName == null)
+            throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(" + url.toString() + ") use keys([protocol])");
+        //由于传入的url是registryURL所以走的是RegistryProtocol的export方法，url中设置的protocol为registry，前边的代码中有提到
+	    com.alibaba.dubbo.rpc.Protocol extension = (com.alibaba.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.Protocol.class).getExtension(extName);
+        return extension.export(arg0);
+    }
+     */
+
+
     /**
      * 本地暴露服务
      * @param url
@@ -597,12 +616,31 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setProtocol(Constants.LOCAL_PROTOCOL) //设置为injvm协议
                     .setHost(NetUtils.LOCALHOST)
                     .setPort(0);
-            Exporter<?> exporter = protocol.export(
-                    proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
+
+            //proxyFactory为ProxyFactory$Adpative实例，动态生成(SPI机制)
+            Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, local);
+            //protocol为Protocol$Adpative的实例，动态生成(SPI机制)
+            Exporter<?> exporter = protocol.export(invoker);
+
+            //添加到暴露列表
             exporters.add(exporter);
             logger.info("Export dubbo service " + interfaceClass.getName() +" to local registry");
         }
     }
+    /*
+    ProxyFactory$Adpative的getInvoker方法：
+        public com.alibaba.dubbo.rpc.Invoker getInvoker(java.lang.Object arg0, java.lang.Class arg1, com.alibaba.dubbo.common.URL arg2) throws com.alibaba.dubbo.rpc.RpcException {
+            if (arg2 == null)
+                throw new IllegalArgumentException("url == null");
+            com.alibaba.dubbo.common.URL url = arg2;
+            String extName = url.getParameter("proxy", "javassist");
+            if (extName == null)
+                throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.ProxyFactory) name from url(" + url.toString() + ") use keys([proxy])");
+            com.alibaba.dubbo.rpc.ProxyFactory extension = (com.alibaba.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+            //这里的extension默认是JavassistProxyFactory实例，
+            return extension.getInvoker(arg0, arg1, arg2);
+        }
+     */
 
     private void checkDefault() {
         if (provider == null) {

@@ -35,17 +35,119 @@ public class JavassistProxyFactory extends AbstractProxyFactory {
         return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));
     }
 
+    /**
+     * 整体流程：
+     * （1）通过服务实现类动态生成对应的代理类wrapper
+     * （2）new一个抽象的Invoker(AbstractProxyInvoker)，实现抽象方法doInvoke，doInvoke内部调用动态生成的代理类的invokeMethod方法
+     * @param proxy 服务实现类
+     * @param type 服务接口
+     * @param url
+     * @param <T>
+     * @return
+     */
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
+        //Wrapper类通过服务实现类生成动态对应的代理类Class
         // TODO Wrapper类不能正确处理带$的类名
         final Wrapper wrapper = Wrapper.getWrapper(proxy.getClass().getName().indexOf('$') < 0 ? proxy.getClass() : type);
+        //实现抽象类AbstractProxyInvoker抽象方法doInvoke，并调用(proxy, type, url)构造函数实例化匿名类
         return new AbstractProxyInvoker<T>(proxy, type, url) {
             @Override
             protected Object doInvoke(T proxy, String methodName, 
                                       Class<?>[] parameterTypes, 
                                       Object[] arguments) throws Throwable {
+                //调用代理类的invokeMethod方法
                 return wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);
             }
         };
     }
 
+
+    //*****  如下为动态生成的wrapper
+//    package com.kl.dubbotest.provider.export;
+//
+//import com.alibaba.dubbo.common.bytecode.ClassGenerator;
+//import com.alibaba.dubbo.common.bytecode.NoSuchPropertyException;
+//import com.alibaba.dubbo.common.bytecode.Wrapper;
+//import java.util.Map;
+//
+//    public class Wrapper0 extends Wrapper implements ClassGenerator.DC {
+//
+//        public static String[] pns;
+//        public static Map pts;
+//        public static String[] mns;
+//        public static String[] dmns;
+//        public static Class[] mts0;
+//
+//        public String[] getPropertyNames() {
+//            return pns;
+//        }
+//
+//        public boolean hasProperty(String paramString) {
+//            return pts.containsKey(paramString);
+//        }
+//
+//        public Class getPropertyType(String paramString) {
+//            return (Class) pts.get(paramString);
+//        }
+//
+//        public String[] getMethodNames() {
+//            return mns;
+//        }
+//
+//        public String[] getDeclaredMethodNames() {
+//            return dmns;
+//        }
+//
+//        public void setPropertyValue(Object paramObject1, String paramString, Object paramObject2) {
+//            try {
+//                com.kl.dubbotest.provider.export.ProviderExport localProviderExport = (com.kl.dubbotest.provider.export.ProviderExport) paramObject1;
+//            } catch (Throwable localThrowable) {
+//                throw new IllegalArgumentException(localThrowable);
+//            }
+//            throw new NoSuchPropertyException("Not found property \"" + paramString
+//                    + "\" filed or setter method in class com.kl.dubbotest.provider.export.ProviderExport.");
+//        }
+//
+//        public Object getPropertyValue(Object paramObject, String paramString) {
+//            try {
+//                com.kl.dubbotest.provider.export.ProviderExport localProviderExport = (com.kl.dubbotest.provider.export.ProviderExport) paramObject;
+//            } catch (Throwable localThrowable) {
+//                throw new IllegalArgumentException(localThrowable);
+//            }
+//            throw new NoSuchPropertyException("Not found property \"" + paramString
+//                    + "\" filed or setter method in class com.kl.dubbotest.provider.export.ProviderExport.");
+//        }
+//
+//        /**
+//         * 核心方法
+//         * @param paramObject
+//         * @param paramString
+//         * @param paramArrayOfClass
+//         * @param paramArrayOfObject
+//         * @return
+//         * @throws java.lang.reflect.InvocationTargetException
+//         */
+//        public Object invokeMethod(Object paramObject, String paramString, Class[] paramArrayOfClass,
+//                Object[] paramArrayOfObject) throws java.lang.reflect.InvocationTargetException {
+//            com.kl.dubbotest.provider.export.ProviderExport localProviderExport;
+//            try {
+//                //将接口实现类ProviderExportImpl对象赋值给localProviderExport
+//                localProviderExport = ((com.kl.dubbotest.provider.export.ProviderExport) paramObject);
+//            } catch (Throwable e) {
+//                throw new IllegalArgumentException(e);
+//            }
+//            try {
+//                //根据传入的方法名paramString，方法参数，执行方法
+//                if ("providerExport".equals(paramString) && paramArrayOfClass.length == 1) {
+//                    localProviderExport.providerExport((java.lang.String) paramArrayOfObject[0]);
+//                    return "providerExport 。。。";
+//                }
+//            } catch (Throwable e) {
+//                throw new java.lang.reflect.InvocationTargetException(e);
+//            }
+//            throw new com.alibaba.dubbo.common.bytecode.NoSuchMethodException("Not found method \"" + paramString
+//                    + "\" in class com.kl.dubbotest.provider.export.ProviderExport.");
+//        }
+//
+//    }
 }

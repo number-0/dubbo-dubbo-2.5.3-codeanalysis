@@ -49,7 +49,7 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
         }
         this.proxy = proxy;
         this.type = type;
-        this.url = url;
+        this.url = url; //url赋值给成员变量，后续流程会使用到
     }
 
     public Class<T> getInterface() {
