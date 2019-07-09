@@ -119,6 +119,8 @@ public class RegistryProtocol implements Protocol {
 
         //2. registry provider：获取对应注册中心操作对象，比如ZookeeperRegistry
         final Registry registry = getRegistry(originInvoker);
+        // 获取要注册到注册中心的地址，eg：
+        //dubbo://192.168.0.100:20880/com.kl.dubbotest.provider.export.ProviderExport?anyhost=true&application=dubbo-spi&dubbo=2.5.3&interface=com.kl.dubbotest.provider.export.ProviderExport&methods=providerExport&pid=80235&retries=0&side=provider&timestamp=1562646169549
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
         registry.register(registedProviderUrl); //向注册中心注册服务
 
@@ -134,6 +136,7 @@ public class RegistryProtocol implements Protocol {
             public Invoker<T> getInvoker() {
                 return exporter.getInvoker();
             }
+            //取消暴露的过程
             public void unexport() {
             	try {
             		exporter.unexport();
@@ -141,11 +144,13 @@ public class RegistryProtocol implements Protocol {
                 	logger.warn(t.getMessage(), t);
                 }
                 try {
+                    //取消注册
                 	registry.unregister(registedProviderUrl);
                 } catch (Throwable t) {
                 	logger.warn(t.getMessage(), t);
                 }
                 try {
+                    //取消订阅
                 	overrideListeners.remove(overrideSubscribeUrl);
                 	registry.unsubscribe(overrideSubscribeUrl, overrideSubscribeListener);
                 } catch (Throwable t) {

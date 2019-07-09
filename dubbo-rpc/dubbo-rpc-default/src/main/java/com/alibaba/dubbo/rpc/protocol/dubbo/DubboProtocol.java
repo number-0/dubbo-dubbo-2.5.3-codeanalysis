@@ -227,15 +227,35 @@ public class DubboProtocol extends AbstractProtocol {
         return DEFAULT_PORT;
     }
 
+    /**
+     * 服务导出整体逻辑：
+     * （1）创建exporter：DubboExporter
+     * （2）openServer()启动服务：根据url启动一个服务，比如绑定端口，开始接受请求信息
+     * （3）返回exporter
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         URL url = invoker.getUrl();
         
         // export service.
+
+        //key的组成：group/service:version:port，group和version可能为空
+        //eg：com.kl.dubbotest.provider.export.ProviderExport:20880
         String key = serviceKey(url);
+
+
+        //构造服务的exporter
+        //如同InjvmProtocol，DubboProtocol也是单例的 故exporterMap也是单例的
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+
+        //通过key放入exporterMap，把持有invoker的exporter 和serviceKey关联
+        //可以通过key找到对应的exporter进而找到invoker提供服务
         exporterMap.put(key, exporter);
         
-        //export an stub service for dispaching event
+        //export an stub service for dispaching event 本地存根相关代码
         Boolean isStubSupportEvent = url.getParameter(Constants.STUB_EVENT_KEY,Constants.DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(Constants.IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice){
@@ -250,20 +270,24 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        //启动服务：根据url启动一个服务，比如绑定端口，开始接受请求信息
         openServer(url);
         
         return exporter;
     }
     
     private void openServer(URL url) {
-        // find server.
+        // find server. key=host:port 用于定位server
         String key = url.getAddress();
         //client 也可以暴露一个只有server可以调用的服务。
         boolean isServer = url.getParameter(Constants.IS_SERVER_KEY,true);
         if (isServer) {
+            //服务实例放到serverMap，key是host:port
+            //这里的serverMap也单例的
         	ExchangeServer server = serverMap.get(key);
         	if (server == null) {
         	    //把发布出去的服务存到serverMap中
+                //通过createServer(url)方法获取server (***看这里***)
         		serverMap.put(key, createServer(url));
         	} else {
         		//server支持reset,配合override功能使用
