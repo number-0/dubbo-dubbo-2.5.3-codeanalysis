@@ -275,47 +275,65 @@ public class DubboProtocol extends AbstractProtocol {
         
         return exporter;
     }
-    
+
+    /**
+     * 启动服务：
+     * （1）从缓存获取
+     *      map{key host:port, val ExchangeServer}
+     * （2）缓存获取不到，则创建服务createServer(url)
+     * （3）缓存获取到了，则重置服务reset(url)
+     * @param url
+     */
     private void openServer(URL url) {
         // find server. key=host:port 用于定位server
         String key = url.getAddress();
-        //client 也可以暴露一个只有server可以调用的服务。
         boolean isServer = url.getParameter(Constants.IS_SERVER_KEY,true);
         if (isServer) {
-            //服务实例放到serverMap，key是host:port
-            //这里的serverMap也单例的
         	ExchangeServer server = serverMap.get(key);
         	if (server == null) {
-        	    //把发布出去的服务存到serverMap中
-                //通过createServer(url)方法获取server (***看这里***)
+                //创建服务器实例
         		serverMap.put(key, createServer(url));
         	} else {
-        		//server支持reset,配合override功能使用
+        		//服务器已创建，则根据 url 中的配置重置服务器
         		server.reset(url);
         	}
         }
     }
-    
+
+    /**
+     * 开启服务
+     * @param url
+     * @return
+     */
     private ExchangeServer createServer(URL url) {
-        //默认开启server关闭时发送readonly事件
+        //默认开启 server关闭时发送readonly事件
         url = url.addParameterIfAbsent(Constants.CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString());
-        //默认开启heartbeat
+        //默认开启 heartbeat，添加心跳检测配置到 url 中
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
+        // 获取 server 参数，默认为 netty
         String str = url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_SERVER);
 
+        // 通过 SPI 检测是否存在Transporter拓展，不存在则抛出异常
         if (str != null && str.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str))
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
 
+        // 添加编码解码器参数，兼容dubbo1,默认是dubbo1compatible ，否则默认dubbo 编解码方案
         url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
         ExchangeServer server;
         try {
+            //构造具体服务实例，
+            //Exchangers是门面类，里面封装了具体交换层实现，并调用它的bind方法
+            // 创建 ExchangeServer
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
+
+        // 获取 client 参数，可指定 netty，mina
         str = url.getParameter(Constants.CLIENT_KEY);
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();
+            // 是否包含 client 所表示的 Transporter，若不包含，则抛出异常
             if (!supportedTypes.contains(str)) {
                 throw new RpcException("Unsupported client type: " + str);
             }

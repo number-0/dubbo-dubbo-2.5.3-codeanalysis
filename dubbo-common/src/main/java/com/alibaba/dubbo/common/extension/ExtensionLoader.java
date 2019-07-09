@@ -87,7 +87,7 @@ public class ExtensionLoader<T> {
     // key：扩展实现类Class, val：配置文件中的key
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
 
-    // TODO:
+    //key：扩展配置文件中配置的key，val：扩展配置文件中配置的val，即扩展实现类全类名
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String,Class<?>>>();
 
     //扩展实现类有@Activate注解，需要缓存到map，key：配置文件的key，val：Activate
