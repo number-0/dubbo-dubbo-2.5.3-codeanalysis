@@ -640,6 +640,22 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             //这里的extension默认是JavassistProxyFactory实例，
             return extension.getInvoker(arg0, arg1, arg2);
         }
+
+    Protocol$Adpative的export方法
+    public com.alibaba.dubbo.rpc.Exporter export(com.alibaba.dubbo.rpc.Invoker arg0) throws com.alibaba.dubbo.rpc.RpcException {
+    if (arg0 == null)
+        throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument == null");
+    if (arg0.getUrl() == null)
+        throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument getUrl() == null");
+    com.alibaba.dubbo.common.URL url = arg0.getUrl();
+    String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+    if (extName == null)
+        throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(" + url.toString() + ") use keys([protocol])");
+    //根据上文URL中的的protocol协议被设置为injvm
+    //这里会走InjvmProtocol的export方法
+    com.alibaba.dubbo.rpc.Protocol extension = (com.alibaba.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.Protocol.class).getExtension(extName);
+    return extension.export(arg0);
+}
      */
 
     private void checkDefault() {
