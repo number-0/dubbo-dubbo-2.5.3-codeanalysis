@@ -232,11 +232,18 @@ public class HeaderExchangeServer implements ExchangeServer {
         server.send(message, sent);
     }
 
+
     private void startHeatbeatTimer() {
+        //关闭心跳定时
         stopHeartbeatTimer();
         if (heartbeat > 0) {
+            //每隔heartbeat时间执行一次
             heatbeatTimer = scheduled.scheduleWithFixedDelay(
+                    //心跳线程HeartBeatTask
+                    //在超时时间之内，发送数据
+                    //在超时时间在外，是客户端的话，重连；是服务端，那么关闭
                     new HeartBeatTask( new HeartBeatTask.ChannelProvider() {
+                        //获取channels
                         public Collection<Channel> getChannels() {
                             return Collections.unmodifiableCollection(
                                     HeaderExchangeServer.this.getChannels() );
@@ -245,7 +252,7 @@ public class HeaderExchangeServer implements ExchangeServer {
                     heartbeat, heartbeat,TimeUnit.MILLISECONDS);
         }
     }
-
+    //关闭心跳定时
     private void stopHeartbeatTimer() {
         try {
             ScheduledFuture<?> timer = heatbeatTimer;
