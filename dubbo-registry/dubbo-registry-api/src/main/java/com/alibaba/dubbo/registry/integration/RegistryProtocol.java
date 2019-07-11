@@ -197,7 +197,30 @@ public class RegistryProtocol implements Protocol {
         }
         return (ExporterChangeableWrapper<T>) exporter;
     }
-    
+
+    /*public com.alibaba.dubbo.rpc.Exporter export(com.alibaba.dubbo.rpc.Invoker arg0)
+            throws com.alibaba.dubbo.rpc.RpcException {
+        if (arg0 == null) {
+            throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument == null");
+        }
+        if (arg0.getUrl() == null) {
+            throw new IllegalArgumentException(
+                    "com.alibaba.dubbo.rpc.Invoker argument getUrl() == null");
+        }
+        com.alibaba.dubbo.common.URL url = arg0.getUrl();
+        String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        if (extName == null) {
+            throw new IllegalStateException(
+                    "Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(" + url
+                            .toString() + ") use keys([protocol])");
+        }
+        //由于这里invokerDelegete的url属性的protocol是dubbo，所以这里走DubboProtocol的export协议
+        com.alibaba.dubbo.rpc.Protocol extension = (com.alibaba.dubbo.rpc.Protocol) ExtensionLoader
+                .getExtensionLoader(com.alibaba.dubbo.rpc.Protocol.class).getExtension(extName);
+        return extension.export(arg0);
+    }*/
+
+
     /**
      * 对修改了url的invoker重新export
      * @param originInvoker
