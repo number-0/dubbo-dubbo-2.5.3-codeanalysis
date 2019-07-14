@@ -241,17 +241,47 @@ public class RegistryProtocol implements Protocol {
 
     /**
      * 根据invoker的地址获取registry实例
+     * (1)如果url的protocol属性为registry，则修改为zookeeper
+     *     eg： url由 "registry://127.0.0.1:2181..."  变成  "zookeeper://127.0.0.1:2181..."
+     * (2)根据当前注册中心的配置信息，获得一个匹配的注册中心，也就是ZookeeperRegistry
      * @param originInvoker
      * @return
      */
     private Registry getRegistry(final Invoker<?> originInvoker){
+        //registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-spi&dubbo=2.5.3&export=dubbo://192.168.0.100:20880/com.kl.dubbotest.provider.export.ProviderExport?anyhost=true&application=dubbo-spi&dubbo=2.5.3&interface=com.kl.dubbotest.provider.export.ProviderExport&methods=providerExport&pid=90311&retries=0&side=provider&timestamp=1562808825201&pid=90311&registry=zookeeper&timestamp=1562808825142
         URL registryUrl = originInvoker.getUrl();
+        //判断协议头protocol是否为registry
         if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {
+            //得到zookeeper的协议地址：zookeeper
             String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);
+            //registryUrl变成  zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-spi&dubbo=2.5.3&export=dubbo://192.168.0.100:20880/com.kl.dubbotest.provider.export.ProviderExport?anyhost=true&application=dubbo-spi&dubbo=2.5.3&interface=com.kl.dubbotest.provider.export.ProviderExport&methods=providerExport&pid=90311&retries=0&side=provider&timestamp=1562808825201&pid=90311&timestamp=1562808825142
             registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);
         }
+        //registryFactory为RegistryFactory$Adaptive
         return registryFactory.getRegistry(registryUrl);
     }
+
+
+    /*public class RegistryFactory$Adaptive implements com.alibaba.dubbo.registry.RegistryFactory {
+
+        public com.alibaba.dubbo.registry.Registry getRegistry(com.alibaba.dubbo.common.URL arg0) {
+            if (arg0 == null) {
+                throw new IllegalArgumentException("url == null");
+            }
+            com.alibaba.dubbo.common.URL url = arg0;
+            String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+            if (extName == null) {
+                throw new IllegalStateException(
+                        "Fail to get extension(com.alibaba.dubbo.registry.RegistryFactory) "
+                                + "name from url(" + url.toString() + ") use keys([protocol])");
+            }
+            //为ZookeeperRegistryFactory
+            com.alibaba.dubbo.registry.RegistryFactory extension = (com.alibaba.dubbo.registry.RegistryFactory) ExtensionLoader
+                    .getExtensionLoader(com.alibaba.dubbo.registry.RegistryFactory.class).
+                            getExtension(extName);
+            return extension.getRegistry(arg0);
+        }
+    }*/
 
     /**
      * 返回注册到注册中心的URL，对URL参数进行一次过滤

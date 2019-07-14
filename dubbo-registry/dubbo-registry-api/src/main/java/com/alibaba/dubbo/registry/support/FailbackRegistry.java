@@ -120,8 +120,13 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         }
     }
 
+    /**
+     * 向注册中心创建一个节点
+     * @param url
+     */
     @Override
     public void register(URL url) {
+        //dubbo://192.168.0.100:20880/com.kl.dubbotest.provider.export.ProviderExport?anyhost=true&application=dubbo-spi&dubbo=2.5.3&interface=com.kl.dubbotest.provider.export.ProviderExport&methods=providerExport&pid=90311&retries=0&side=provider&timestamp=1562808825201
         super.register(url);
         failedRegistered.remove(url);
         failedUnregistered.remove(url);

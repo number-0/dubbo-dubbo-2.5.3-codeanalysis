@@ -57,7 +57,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
     private final ConcurrentMap<URL, ConcurrentMap<NotifyListener, ChildListener>> zkListeners = new ConcurrentHashMap<URL, ConcurrentMap<NotifyListener, ChildListener>>();
     
     private final ZookeeperClient zkClient;
-    
+
+    /**
+     * 通过zkClient，获得一个zookeeper的连接实例
+     * @param url
+     * @param zookeeperTransporter
+     */
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
         super(url);
         if (url.isAnyHost()) {
@@ -67,7 +72,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (! group.startsWith(Constants.PATH_SEPARATOR)) {
             group = Constants.PATH_SEPARATOR + group;
         }
+        //根节点
         this.root = group;
+        //建立连接
         zkClient = zookeeperTransporter.connect(url);
         zkClient.addStateListener(new StateListener() {
             public void stateChanged(int state) {
