@@ -398,6 +398,14 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      * （1）根据scope判断是本地引用还是远程引用
      * （2）本地引用
      * （3）远程引用
+     *      a. 用户在System或dubbo-resolve.properties文件有指定配置(一般都是直连配置)，则使用指定的配置URL
+     *      b. 不满足a，则使用dubbo配置文件中的注册中心URL
+     *      c. 将url都添加到urls中
+     *      d.
+     *          urls列表数量为1，则直接通过自适应Protocol扩展类构建Invoker实例
+     *          urls列表数量大于1，构建每个url对应的invoker并添加到invokers列表，通过Cluster合并多个Invoker
+     *      e. 调用ProxyFactory生成代理类
+     *
      * @param map
      * @return
      */
@@ -436,7 +444,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         // 远程引用
 		else {
             if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
-                // 当需要配置多个 url 时，可用分号进行分割，这里会进行切分
+                // 当需要配置多个 url 时，用分号进行分割，这里会进行切分
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -459,6 +467,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     }
                 }
             } else { // 通过注册中心配置拼装URL
+                //加载获取注册中心url
             	List<URL> us = loadRegistries(false);
             	if (us != null && us.size() > 0) {
                 	for (URL u : us) {

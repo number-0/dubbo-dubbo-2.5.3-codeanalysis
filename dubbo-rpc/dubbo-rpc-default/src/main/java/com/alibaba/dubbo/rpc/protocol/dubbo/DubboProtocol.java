@@ -341,16 +341,30 @@ public class DubboProtocol extends AbstractProtocol {
         return server;
     }
 
+    /**
+     * 在服务提供方，Invoker 用于调用服务提供类。在服务消费方，Invoker 用于执行远程调用。
+     * @param serviceType 扩张接口类Class
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
-        // create rpc invoker.
+        // create rpc invoker. 创建 DubboInvoker
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
         return invoker;
     }
-    
+
+    /**
+     * ExchangeClient不具备通信能力，底层的NettyClient具备通信能力
+     * @param url
+     * @return
+     */
     private ExchangeClient[] getClients(URL url){
         //是否共享连接
         boolean service_share_connect = false;
+        // 获取连接数，默认为0，表示未配置
         int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
         //如果connections不配置，则共享连接，否则每服务每连接
         if (connections == 0){
@@ -361,8 +375,10 @@ public class DubboProtocol extends AbstractProtocol {
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
             if (service_share_connect){
+                // 获取共享客户端
                 clients[i] = getSharedClient(url);
             } else {
+                // 创建新的客户端
                 clients[i] = initClient(url);
             }
         }
@@ -370,13 +386,18 @@ public class DubboProtocol extends AbstractProtocol {
     }
     
     /**
-     *获取共享连接 
+     * 获取共享连接
+     * （1）从缓存获取ExchangeClient
+     * （2）缓存获取不到，调initClient(url)创建ExchangeClient，并使用ReferenceCountExchangeClient包装ExchangeClient
+     * （3）置入缓存
      */
     private ExchangeClient getSharedClient(URL url){
         String key = url.getAddress();
+        // 获取带有“引用计数”功能的 ExchangeClient
         ReferenceCountExchangeClient client = referenceClientMap.get(key);
         if ( client != null ){
             if ( !client.isClosed()){
+                // 增加引用计数
                 client.incrementAndGetCount();
                 return client;
             } else {
@@ -384,8 +405,10 @@ public class DubboProtocol extends AbstractProtocol {
                 referenceClientMap.remove(key);
             }
         }
+
+        // 创建 ExchangeClient 客户端
         ExchangeClient exchagneclient = initClient(url);
-        
+        // 将 ExchangeClient 实例传给 ReferenceCountExchangeClient，这里使用了装饰模式
         client = new ReferenceCountExchangeClient(exchagneclient, ghostClientMap);
         referenceClientMap.put(key, client);
         ghostClientMap.remove(key);
@@ -393,20 +416,22 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     /**
-     * 创建新连接.
+     * 创建新连接.ExchangeClient
      */
     private ExchangeClient initClient(URL url) {
         
-        // client type setting.
+        // client type setting. 获取客户端类型，默认为 netty
         String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
 
         String version = url.getParameter(Constants.DUBBO_VERSION_KEY);
         boolean compatible = (version != null && version.startsWith("1.0."));
+        // 添加编解码参数到url中
         url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() && compatible ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
-        //默认开启heartbeat
+        //添加心跳包参数到url中，默认开启heartbeat
         url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
         
         // BIO存在严重性能问题，暂时不允许使用
+        // 检测客户端类型是否存在，不存在则抛出异常
         if (str != null && str.length() > 0 && ! ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported client type: " + str + "," +
                     " supported client type is " + StringUtils.join(ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
@@ -414,10 +439,13 @@ public class DubboProtocol extends AbstractProtocol {
         
         ExchangeClient client ;
         try {
-            //设置连接应该是lazy的 
+            //设置连接应该是lazy的
+            // 获取 lazy 配置，并根据配置值决定创建的客户端类型
             if (url.getParameter(Constants.LAZY_CONNECT_KEY, false)){
+                // 创建懒加载 ExchangeClient 实例
                 client = new LazyConnectExchangeClient(url ,requestHandler);
             } else {
+                // 创建普通 ExchangeClient 实例
                 client = Exchangers.connect(url ,requestHandler);
             }
         } catch (RemotingException e) {

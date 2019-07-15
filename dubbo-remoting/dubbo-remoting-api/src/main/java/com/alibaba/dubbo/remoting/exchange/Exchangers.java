@@ -100,6 +100,13 @@ public class Exchangers {
         return connect(URL.valueOf(url), handler);
     }
 
+    /**
+     * 创建ExchangeClient实例
+     * @param url
+     * @param handler
+     * @return
+     * @throws RemotingException
+     */
     public static ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
@@ -108,6 +115,7 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        // 获取 Exchanger 实例，默认为 HeaderExchangeClient
         return getExchanger(url).connect(url, handler);
     }
 
@@ -117,6 +125,7 @@ public class Exchangers {
     }
 
     public static Exchanger getExchanger(String type) {
+        //HeaderExchanger
         return ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type);
     }
 

@@ -326,45 +326,86 @@ public class RegistryProtocol implements Protocol {
         String key = providerUrl.removeParameters("dynamic", "enabled").toFullString();
         return key;
     }
-    
+
+    /**
+     * 创建Invoker对象
+     * （1）url设置协议头protocol，默认为dubbo
+     * （2）根据url加载对应的Registry实例
+     * （3）从url获取group，根据group决定使用哪个Cluster的实例
+     * （4）调用doRefer方法生成Invoker
+     * @param type 扩张接口类Class
+     * @param url 远程服务的URL地址
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @SuppressWarnings("unchecked")
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        // 取 registry 参数值，并将其设置为协议头
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
+        // 获取注册中心实例
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
         	return proxyFactory.getInvoker((T) registry, type, url);
         }
 
-        // group="a,b" or group="*"
+        // group="a,b" or group="*"  将 url 查询字符串转为 Map
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
+        // 获取 group 配置
         String group = qs.get(Constants.GROUP_KEY);
         if (group != null && group.length() > 0 ) {
             if ( ( Constants.COMMA_SPLIT_PATTERN.split( group ) ).length > 1
                     || "*".equals( group ) ) {
+                // 通过 SPI 加载 MergeableCluster 实例，并调用 doRefer 继续执行服务引用逻辑
                 return doRefer( getMergeableCluster(), registry, type, url );
             }
         }
+        // 调用 doRefer 继续执行服务引用逻辑
         return doRefer(cluster, registry, type, url);
     }
     
     private Cluster getMergeableCluster() {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
-    
+
+    /**
+     * 生成Invoker
+     * （1）创建RegistryDirectory
+     * （2）生成消费者链接URL
+     * （3）向注册中心注册：新建zk节点
+     * （4）订阅providers、configurators、routers等节点下的数据
+     * （5）一个服务会部署在多台机器上，这样就会在providers产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
+     * @param cluster
+     * @param registry
+     * @param type 扩张接口Class
+     * @param url
+     * @param <T>
+     * @return
+     */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        // 创建 RegistryDirectory 实例
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        // 设置注册中心和协议
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
+        // 生成服务消费者链接
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
+
+        // 注册服务消费者，在 consumers 目录下新建节点
         if (! Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+
+        // 订阅 providers、configurators、routers 等节点数据, RegistryDirectory会收到这几个节点下的子节点信息
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 
                 + "," + Constants.CONFIGURATORS_CATEGORY 
                 + "," + Constants.ROUTERS_CATEGORY));
+
+        // 一个注册中心可能有多个服务提供者，因此这里需要将多个服务提供者合并为一个
+        //一个服务会部署在多台机器上，这样就会在providers产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
         return cluster.join(directory);
     }
 
