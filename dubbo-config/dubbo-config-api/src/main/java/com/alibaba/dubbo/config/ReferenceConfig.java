@@ -396,7 +396,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     /**
      * 创建接口类对应代理对象整体流程：
      * （1）根据scope判断是本地引用还是远程引用
-     * （2）本地引用
+     * （2）本地引用：构建InjvmInvoker实例
      * （3）远程引用
      *      a. 用户在System或dubbo-resolve.properties文件有指定配置(一般都是直连配置)，则使用指定的配置URL
      *      b. 不满足a，则使用dubbo配置文件中的注册中心URL
@@ -443,7 +443,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 		}
         // 远程引用
 		else {
-            if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是对点对直连地址，也可能是注册中心URL
+            if (url != null && url.length() > 0) { // 用户指定URL，指定的URL可能是点对点直连地址，也可能是注册中心URL
                 // 当需要配置多个 url 时，用分号进行分割，这里会进行切分
                 String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {

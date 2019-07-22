@@ -343,6 +343,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * 在服务提供方，Invoker 用于调用服务提供类。在服务消费方，Invoker 用于执行远程调用。
+     * Invoker是由Protocol实现类构建而来
      * @param serviceType 扩张接口类Class
      * @param url 远程服务的URL地址
      * @param <T>
@@ -358,6 +359,8 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * ExchangeClient不具备通信能力，底层的NettyClient具备通信能力
+     * （1）判断是创建共享连接还是多个连接(每个服务每个连接)，默认为共享连接
+     * （2）创建连接ExchangeClient
      * @param url
      * @return
      */
@@ -416,7 +419,7 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     /**
-     * 创建新连接.ExchangeClient
+     * 创建新连接.ExchangeClient实例
      */
     private ExchangeClient initClient(URL url) {
         
