@@ -493,7 +493,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             // 多个注册中心或多个服务提供者，或者两者混合
             else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
-                URL registryURL = null;
+                URL registryURL  = null;
 
                 // 获取所有的 Invoker
                 for (URL url : urls) {

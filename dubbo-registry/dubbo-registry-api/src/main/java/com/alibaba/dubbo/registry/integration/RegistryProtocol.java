@@ -330,7 +330,7 @@ public class RegistryProtocol implements Protocol {
     /**
      * 创建Invoker对象
      * （1）url设置协议头protocol，默认为dubbo
-     * （2）根据url加载对应的Registry实例
+     * （2）根据url加载对应的Registry实例：DubboRegistry
      * （3）从url获取group，根据group决定使用哪个Cluster的实例
      * （4）调用doRefer方法生成Invoker
      * @param type 扩张接口类Class
@@ -374,7 +374,7 @@ public class RegistryProtocol implements Protocol {
      * （2）生成消费者链接URL
      * （3）向注册中心注册：新建zk节点
      * （4）订阅providers、configurators、routers等节点下的数据
-     * （5）一个服务会部署在多台机器上，这样就会在providers产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
+     * （5）一个服务会部署在多台机器上，这样就会在providers节点下产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
      * @param cluster
      * @param registry
      * @param type 扩张接口Class
