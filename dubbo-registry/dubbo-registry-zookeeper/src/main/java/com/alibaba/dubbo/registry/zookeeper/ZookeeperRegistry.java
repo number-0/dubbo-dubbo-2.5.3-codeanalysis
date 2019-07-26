@@ -118,6 +118,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * （1）对providers/routers/configurator三个节点进行创建和子节点监听
+     * （2）调用notify(url,listener,urls) 将已经可用的列表进行通知
+     * @param url
+     * @param listener
+     */
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {

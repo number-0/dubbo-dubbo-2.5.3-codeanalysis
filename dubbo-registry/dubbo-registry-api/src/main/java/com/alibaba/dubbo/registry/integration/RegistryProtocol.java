@@ -341,8 +341,14 @@ public class RegistryProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        //registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-spi&dubbo=2.5.3&pid=35068&refer=application%3Ddubbo-spi%26check%3Dfalse%26dubbo%3D2.5.3%26interface%3Dcom.kl.dubbotest.provider.export.ProviderExport%26methods%3DproviderExport%26pid%3D35068%26retries%3D0%26side%3Dconsumer%26timestamp%3D1564102096811&registry=zookeeper&timestamp=1564102096848
+
         // 取 registry 参数值，并将其设置为协议头
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
+
+        //zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=dubbo-spi&dubbo=2.5.3&pid=35068&refer=application%3Ddubbo-spi%26check%3Dfalse%26dubbo%3D2.5.3%26interface%3Dcom.kl.dubbotest.provider.export.ProviderExport%26methods%3DproviderExport%26pid%3D35068%26retries%3D0%26side%3Dconsumer%26timestamp%3D1564102096811&timestamp=1564102096848
+
+
         // 获取注册中心实例
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
@@ -372,7 +378,7 @@ public class RegistryProtocol implements Protocol {
      * 生成Invoker
      * （1）创建RegistryDirectory
      * （2）生成消费者链接URL
-     * （3）向注册中心注册：新建zk节点
+     * （3）向注册中心注册：在consumers目录下新建zk节点
      * （4）订阅providers、configurators、routers等节点下的数据
      * （5）一个服务会部署在多台机器上，这样就会在providers节点下产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
      * @param cluster
@@ -389,6 +395,7 @@ public class RegistryProtocol implements Protocol {
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
         // 生成服务消费者链接
+        //consumer://192.168.0.110/com.kl.dubbotest.provider.export.ProviderExport?application=dubbo-spi&dubbo=2.5.3&interface=com.kl.dubbotest.provider.export.ProviderExport&methods=providerExport&pid=35033&retries=0&side=consumer&timestamp=1564101892793
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
 
         // 注册服务消费者，在 consumers 目录下新建节点
@@ -399,6 +406,7 @@ public class RegistryProtocol implements Protocol {
         }
 
         // 订阅 providers、configurators、routers 等节点数据, RegistryDirectory会收到这几个节点下的子节点信息
+        //消费者和提供者建立nio连接也在directory.subscribe完成
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 
                 + "," + Constants.CONFIGURATORS_CATEGORY 
