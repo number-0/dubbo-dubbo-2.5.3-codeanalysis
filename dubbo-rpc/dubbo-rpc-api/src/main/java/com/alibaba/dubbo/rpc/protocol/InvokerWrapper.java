@@ -50,6 +50,7 @@ public class InvokerWrapper<T> implements Invoker<T> {
     }
 
     public Result invoke(Invocation invocation) throws RpcException {
+        //invoker是从构造方法里传入的
         return invoker.invoke(invocation);
     }
 

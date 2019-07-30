@@ -366,7 +366,7 @@ public class RegistryProtocol implements Protocol {
                 return doRefer( getMergeableCluster(), registry, type, url );
             }
         }
-        // 调用 doRefer 继续执行服务引用逻辑
+        // 调用 doRefer 继续执行服务引用逻辑，cluster是Cluster$Adpative
         return doRefer(cluster, registry, type, url);
     }
     
@@ -414,8 +414,26 @@ public class RegistryProtocol implements Protocol {
 
         // 一个注册中心可能有多个服务提供者，因此这里需要将多个服务提供者合并为一个
         //一个服务会部署在多台机器上，这样就会在providers产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
-        return cluster.join(directory);
+        return cluster.join(directory);//由于dubbo的aop，所以会调MockClusterWrapper#join
     }
+    //Cluster$Adpative#join
+    /*
+    public com.alibaba.dubbo.rpc.Invoker join(com.alibaba.dubbo.rpc.cluster.Directory arg0) throws com.alibaba.dubbo.rpc.RpcException {
+        if (arg0 == null)
+            throw new IllegalArgumentException("com.alibaba.dubbo.rpc.cluster.Directory argument == null");
+        if (arg0.getUrl() == null)
+            throw new IllegalArgumentException("com.alibaba.dubbo.rpc.cluster.Directory argument getUrl() == null");
+        com.alibaba.dubbo.common.URL url = arg0.getUrl();
+        //通过cluster获取集群策略，默认是failover
+        //本例是使用failover机制
+        String extName = url.getParameter("cluster", "failover");
+        if(extName == null)
+            throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.cluster.Cluster) name from url(" + url.toString() + ") use keys([cluster])");
+        com.alibaba.dubbo.rpc.cluster.Cluster extension = (com.alibaba.dubbo.rpc.cluster.Cluster)ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.cluster.Cluster.class).getExtension(extName);
+        //通过spi这里得到FailoverCluster对象
+        return extension.join(arg0);
+    }
+    */
 
     //过滤URL中不需要输出的参数(以点号开头的)
     private static String[] getFilteredKeys(URL url) {

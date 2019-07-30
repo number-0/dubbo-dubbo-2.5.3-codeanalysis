@@ -59,6 +59,9 @@ public class ProtocolFilterWrapper implements Protocol {
      */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
+        //先获取激活的过滤器，我这里手动配置了monitor MonitorFilter过虑器，
+        //另外两个自动激活的过滤器是FutureFilter，ConsumerContextFilter
+        //这里需要看spi机制的getActivateExtension方法相关代码
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
         if (filters.size() > 0) {
             for (int i = filters.size() - 1; i >= 0; i --) {
@@ -78,7 +81,9 @@ public class ProtocolFilterWrapper implements Protocol {
                         return invoker.isAvailable();
                     }
 
+                    //实现invoker的 invoke方法
                     public Result invoke(Invocation invocation) throws RpcException {
+                        //嵌套进过滤器链
                         return filter.invoke(next, invocation);
                     }
 
@@ -111,7 +116,7 @@ public class ProtocolFilterWrapper implements Protocol {
     }
 
     /**
-     * 调用前执行过滤器链
+     * 引用前，执行过滤器链
      * @param type 服务的类型
      * @param url 远程服务的URL地址
      * @param <T>

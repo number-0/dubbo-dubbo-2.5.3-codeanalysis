@@ -63,7 +63,9 @@ public class ProtocolListenerWrapper implements Protocol {
         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
             return protocol.refer(type, url);
         }
-        return new ListenerInvokerWrapper<T>(protocol.refer(type, url), 
+        //获取激活的监听器，目前dubbo没有 提供合适的监听器 只有一个DeprecatedInvokerListener实现类，还是个Deprecated的
+        return new ListenerInvokerWrapper<T>(protocol.refer(type, url),
+                //所以这里为空
                 Collections.unmodifiableList(
                         ExtensionLoader.getExtensionLoader(InvokerListener.class)
                         .getActivateExtension(url, Constants.INVOKER_LISTENER_KEY)));

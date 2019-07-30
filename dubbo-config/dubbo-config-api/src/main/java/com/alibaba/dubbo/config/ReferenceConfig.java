@@ -488,6 +488,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
             // 单个注册中心或服务提供者(服务直连，下同)
             if (urls.size() == 1) {
+                //如果是服务直连，即dubbo协议，会走DubboProtocol#refer
                 invoker = refprotocol.refer(interfaceClass, urls.get(0));
             }
             // 多个注册中心或多个服务提供者，或者两者混合

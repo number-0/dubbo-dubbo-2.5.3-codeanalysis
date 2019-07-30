@@ -65,17 +65,26 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
         this.consumerUrl = consumerUrl;
         setRouters(routers);
     }
-    
+
+    /**
+     * 落地路由规则
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     public List<Invoker<T>> list(Invocation invocation) throws RpcException {
         if (destroyed){
             throw new RpcException("Directory already destroyed .url: "+ getUrl());
         }
-        List<Invoker<T>> invokers = doList(invocation);
+        //获取所有的提供者
+        List<Invoker<T>> invokers = doList(invocation);//(***看这里***)
+        //本地路由规则，这个其实已近设置好setRouters方法。什么时候设置的，稍后看看
         List<Router> localRouters = this.routers; // local reference
         if (localRouters != null && localRouters.size() > 0) {
             for (Router router: localRouters){
                 try {
                     if (router.getUrl() == null || router.getUrl().getParameter(Constants.RUNTIME_KEY, true)) {
+                        //Router接口，实现类的rout的方法。路由获取服务提供者
                         invokers = router.route(invokers, getConsumerUrl(), invocation);
                     }
                 } catch (Throwable t) {

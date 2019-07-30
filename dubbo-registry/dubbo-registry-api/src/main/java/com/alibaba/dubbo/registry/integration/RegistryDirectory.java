@@ -221,6 +221,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             if (invokerUrls.size() ==0 ){
             	return;
             }
+            //生成Invoker方法 toInvokers(***看这里****)
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls) ;// 将URL列表转成Invoker列表
             Map<String, List<Invoker<T>>> newMethodInvokerMap = toMethodInvokers(newUrlInvokerMap); // 换方法名映射Invoker列表
             // state change
@@ -392,6 +393,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 		enabled = url.getParameter(Constants.ENABLED_KEY, true);
                 	}
                 	if (enabled) {
+                        //这里是invoker的创建的地方（***看这里***）
                 		invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
                 	}
                 } catch (Throwable t) {
@@ -576,9 +578,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     public List<Invoker<T>> doList(Invocation invocation) {
         if (forbidden) {
+            // 1. 没有服务提供者 2. 服务提供者被禁用
             throw new RpcException(RpcException.FORBIDDEN_EXCEPTION, "Forbid consumer " +  NetUtils.getLocalHost() + " access service " + getInterface().getName() + " from registry " + getUrl().getAddress() + " use dubbo version " + Version.getVersion() + ", Please check registry access list (whitelist/blacklist).");
         }
         List<Invoker<T>> invokers = null;
+        // local reference 从这里搜索methodInvokerMap赋值，在refreshInvoker方法里。(***看这里***)
         Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
             String methodName = RpcUtils.getMethodName(invocation);
@@ -666,6 +670,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     private static class InvokerDelegete<T> extends InvokerWrapper<T>{
         private URL providerUrl;
         public InvokerDelegete(Invoker<T> invoker, URL url, URL providerUrl) {
+            //调用父类构造方法
             super(invoker, url);
             this.providerUrl = providerUrl;
         }

@@ -60,7 +60,11 @@ public class NettyClient extends AbstractClient {
     public NettyClient(final URL url, final ChannelHandler handler) throws RemotingException{
         super(url, wrapChannelHandler(url, handler));
     }
-    
+
+    /**
+     * 打开到远端服务机器的连接
+     * @throws Throwable
+     */
     @Override
     protected void doOpen() throws Throwable {
         NettyHelper.setNettyLoggerFactory();
@@ -75,6 +79,8 @@ public class NettyClient extends AbstractClient {
             public ChannelPipeline getPipeline() {
                 NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyClient.this);
                 ChannelPipeline pipeline = Channels.pipeline();
+                //设置消息流的处理handler,发出去的消息先经过handler再经过encoder，
+                //这里断点可以设置在nettyHandler类里。
                 pipeline.addLast("decoder", adapter.getDecoder());
                 pipeline.addLast("encoder", adapter.getEncoder());
                 pipeline.addLast("handler", nettyHandler);

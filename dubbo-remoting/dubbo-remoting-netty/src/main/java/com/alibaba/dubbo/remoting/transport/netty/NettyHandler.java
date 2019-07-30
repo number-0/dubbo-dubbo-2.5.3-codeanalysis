@@ -94,9 +94,15 @@ public class NettyHandler extends SimpleChannelHandler {
         }
     }
 
+    /**
+     * NettyHandler继承了netty的SimpleChannelHandler
+     * @param ctx
+     * @param e
+     * @throws Exception
+     */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        super.writeRequested(ctx, e);
+        super.writeRequested(ctx, e);//断点处
         NettyChannel channel = NettyChannel.getOrAddChannel(ctx.getChannel(), url, handler);
         try {
             handler.sent(channel, e.getMessage());

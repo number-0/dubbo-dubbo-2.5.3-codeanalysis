@@ -262,6 +262,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         if (send_reconnect && !isConnected()){
             connect();
         }
+        //获取具体channel实例
         Channel channel = getChannel();
         //TODO getChannel返回的状态是否包含null需要改进
         if (channel == null || ! channel.isConnected()) {

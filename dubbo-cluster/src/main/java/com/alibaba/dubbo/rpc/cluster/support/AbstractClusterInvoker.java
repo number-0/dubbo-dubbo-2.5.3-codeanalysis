@@ -215,12 +215,17 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         checkWheatherDestoried();
 
         LoadBalance loadbalance;
-        
-        List<Invoker<T>> invokers = list(invocation);
+
+        //会调用directory的list方法 返回要调用invokers集合。
+        //其实是AbstractDirectory的list方法，这个方法里就是利用路由规则（如果有），从所有提供者中，遴选出符合规则的提供者
+        //接下里才是，集群容错和负载均衡。
+        List<Invoker<T>> invokers = list(invocation);//生成invoker方法（****看这里***）
         if (invokers != null && invokers.size() > 0) {
+            //从url通过key "loadbalance" 取不到值，就取默认random随机策略
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(invokers.get(0).getUrl()
                     .getMethodParameter(invocation.getMethodName(),Constants.LOADBALANCE_KEY, Constants.DEFAULT_LOADBALANCE));
         } else {
+            //取默认random随机策略
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
@@ -257,6 +262,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
                                        LoadBalance loadbalance) throws RpcException;
     
     protected  List<Invoker<T>> list(Invocation invocation) throws RpcException {
+        //directory.list(invocation)获取invokers，这里directory是RegistryDirectory
     	List<Invoker<T>> invokers = directory.list(invocation);
     	return invokers;
     }

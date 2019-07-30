@@ -93,6 +93,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                 return new RpcResult();
             } else {
             	RpcContext.getContext().setFuture(null);
+                //实际的请求语句 ，这里的currentClient是 自身对象属性clients[0]值(***看这里****)
                 return (Result) currentClient.request(inv, timeout).get();
             }
         } catch (TimeoutException e) {

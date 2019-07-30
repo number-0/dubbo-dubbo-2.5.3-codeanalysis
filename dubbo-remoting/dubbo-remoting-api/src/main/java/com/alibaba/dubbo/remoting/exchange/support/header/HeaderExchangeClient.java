@@ -76,6 +76,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     public ResponseFuture request(Object request) throws RemotingException {
+        //这里channel对象是从构造函数中赋值的，this.channel = new HeaderExchangeChannel(client);
         return channel.request(request);
     }
 

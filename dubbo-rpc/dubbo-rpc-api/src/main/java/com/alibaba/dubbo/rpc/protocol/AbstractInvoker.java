@@ -141,6 +141,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         
         
         try {
+            //doInvoke 具体实现在子类中
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
