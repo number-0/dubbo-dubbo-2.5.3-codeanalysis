@@ -209,7 +209,16 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         }
         return null;
     }
-    
+
+    /**
+     * 整体执行流程：
+     * （1）获取要调用的Invoker列表(服务提供者会部署在多台机器上)
+     * （2）获取负责均衡策略，默认为random
+     * （3）调用doInvoke进行后续操作
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     public Result invoke(final Invocation invocation) throws RpcException {
 
         checkWheatherDestoried();
@@ -229,6 +238,8 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             loadbalance = ExtensionLoader.getExtensionLoader(LoadBalance.class).getExtension(Constants.DEFAULT_LOADBALANCE);
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+
+        // 调用 doInvoke 进行后续操作
         return doInvoke(invocation, invokers, loadbalance);
     }
 

@@ -499,7 +499,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 // 获取所有的 Invoker
                 for (URL url : urls) {
                     // 通过 refprotocol 调用 refer 构建 Invoker，refprotocol 会在运行时
-                    // 根据 url 协议头加载指定的 Protocol 实例，并调用实例的 refer 方法
+                    // 根据 url 协议头加载指定的 Protocol 实例，并调用实例的 refer 方法，这里走RegistryProtocol#refer
                     invokers.add(refprotocol.refer(interfaceClass, url));
                     if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
                         registryURL = url; // 用了最后一个registry url
@@ -534,6 +534,22 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         // 创建服务代理类
         return (T) proxyFactory.getProxy(invoker);
     }
+    /*
+    public class ProxyFactory$Adpative implements com.alibaba.dubbo.rpc.ProxyFactory {
+        public java.lang.Object getProxy(com.alibaba.dubbo.rpc.Invoker arg0) throws com.alibaba.dubbo.rpc.RpcException {
+            if (arg0 == null) throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument == null");
+            if (arg0.getUrl() == null)
+                throw new IllegalArgumentException("com.alibaba.dubbo.rpc.Invoker argument getUrl() == null");
+            com.alibaba.dubbo.common.URL url = arg0.getUrl();
+            String extName = url.getParameter("proxy", "javassist");
+            if (extName == null)
+                throw new IllegalStateException("Fail to get extension(com.alibaba.dubbo.rpc.ProxyFactory) name from url(" + url.toString() + ") use keys([proxy])");
+            //这里默认用了ProxyFactory javassist扩展的getProxy方法创建代理
+            com.alibaba.dubbo.rpc.ProxyFactory extension = (com.alibaba.dubbo.rpc.ProxyFactory) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.ProxyFactory.class).getExtension(extName);
+            return extension.getProxy(arg0);
+        }
+    }
+    */
 
     private void checkDefault() {
         if (consumer == null) {

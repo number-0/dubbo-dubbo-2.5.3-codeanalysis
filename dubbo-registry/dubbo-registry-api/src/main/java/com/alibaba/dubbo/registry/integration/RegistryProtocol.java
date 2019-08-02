@@ -15,6 +15,7 @@
  */
 package com.alibaba.dubbo.registry.integration;
 
+import com.alibaba.dubbo.rpc.cluster.support.wrapper.MockClusterInvoker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -414,7 +415,9 @@ public class RegistryProtocol implements Protocol {
 
         // 一个注册中心可能有多个服务提供者，因此这里需要将多个服务提供者合并为一个
         //一个服务会部署在多台机器上，这样就会在providers产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
-        return cluster.join(directory);//由于dubbo的aop，所以会调MockClusterWrapper#join
+        //由于dubbo的aop，所以会调MockClusterWrapper#join
+        //返回MockClusterInvoker<T> (RegistryDirectory, FailoverClusterInvoker)
+        return cluster.join(directory);
     }
     //Cluster$Adpative#join
     /*
