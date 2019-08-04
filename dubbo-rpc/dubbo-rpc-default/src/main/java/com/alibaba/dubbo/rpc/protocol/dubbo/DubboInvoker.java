@@ -66,7 +66,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
     }
 
     /**
-     * DubboInvoker#doInvoke：调用
+     * DubboInvoker#doInvoke：3种调用逻辑
      * （1）获取配置oneWay单向通信配置(异步无返回值)和isAsync异步配置(异步有返回值)
      * （2）获取ExchangeClient
      *      a. 如果是oneWay，走异步无返回值调用，currentClient#send，返回一个空的RpcResult
