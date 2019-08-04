@@ -126,8 +126,10 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
                                             + " is DESTROYED, can not be invoked any more!");
         }
         RpcInvocation invocation = (RpcInvocation) inv;
+        // 设置 Invoker
         invocation.setInvoker(this);
         if (attachment != null && attachment.size() > 0) {
+            // 设置 attachment
         	invocation.addAttachmentsIfAbsent(attachment);
         }
         Map<String, String> context = RpcContext.getContext().getAttachments();
@@ -135,13 +137,14 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         	invocation.addAttachmentsIfAbsent(context);
         }
         if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)){
+            // 设置异步信息到 RpcInvocation#attachment 中
         	invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
         }
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
         
         
         try {
-            //doInvoke 具体实现在子类中
+            //doInvoke 具体实现在子类中，DubboInvoker
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();

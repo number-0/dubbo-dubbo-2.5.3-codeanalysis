@@ -381,6 +381,7 @@ public class RegistryProtocol implements Protocol {
      * （2）生成消费者链接URL
      * （3）向注册中心注册：在consumers目录下新建zk节点
      * （4）订阅providers、configurators、routers等节点下的数据
+     *      比如监听providers的子节点，会在RegistryDirectory的成员变量缓存接口方法和远程服务的Invoker列表：Map<methodName, List<Invoker>>
      * （5）一个服务会部署在多台机器上，这样就会在providers节点下产生多个节点，就需要Cluster将多个服务节点合并为一个，并生成一个Invoker
      * @param cluster
      * @param registry
@@ -407,6 +408,7 @@ public class RegistryProtocol implements Protocol {
         }
 
         // 订阅 providers、configurators、routers 等节点数据, RegistryDirectory会收到这几个节点下的子节点信息
+        //比如监听providers的子节点，会在RegistryDirectory的成员变量缓存接口方法和远程服务的Invoker列表：Map<methodName, List<Invoker>>
         //消费者和提供者建立nio连接也在directory.subscribe完成
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, 
                 Constants.PROVIDERS_CATEGORY 

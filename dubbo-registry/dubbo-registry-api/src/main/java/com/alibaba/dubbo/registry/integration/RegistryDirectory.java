@@ -201,6 +201,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * 1.如果url已经被转换为invoker，则不在重新引用，直接从缓存中获取，注意如果url中任何一个参数变更也会重新引用
      * 2.如果传入的invoker列表不为空，则表示最新的invoker列表
      * 3.如果传入的invokerUrl列表是空，则表示只是下发的override规则或route规则，需要重新交叉对比，决定是否需要重新引用。
+     * 缓存：Map<String, List<Invoker<T>>>，key：接口方法 val:远程服务的Invoker列表
      * @param invokerUrls 传入的参数不能为null
      */
     private void refreshInvoker(List<URL> invokerUrls){

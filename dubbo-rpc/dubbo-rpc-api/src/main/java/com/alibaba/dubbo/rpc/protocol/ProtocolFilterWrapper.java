@@ -116,7 +116,7 @@ public class ProtocolFilterWrapper implements Protocol {
     }
 
     /**
-     * 引用前，执行过滤器链
+     * 调用前，执行过滤器链
      * @param type 服务的类型
      * @param url 远程服务的URL地址
      * @param <T>

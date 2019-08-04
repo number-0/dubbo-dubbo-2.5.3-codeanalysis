@@ -51,11 +51,10 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 
     /**
      * doInvoke整体执行流程：
-     * （1）获取重试次数
-     * （2）通过循环的方式调用，失败重试，成功就跳出循环
-     *          调用失败，会重新获取Invoker列表，防止服务提供者的某台机器挂了
-     *
-     *
+     * （1）获取调远程接口重试次数
+     * （2）以重试次数为循环的最大长度，通过循环的方式调用，失败重试，成功就跳出循环
+     *          通过负载均衡策略选择调用服务端的哪一个Invoker
+     *          调用失败重试，会重新获取Invoker列表，防止服务提供者的某台机器挂了
      * @param invocation
      * @param invokers
      * @param loadbalance
