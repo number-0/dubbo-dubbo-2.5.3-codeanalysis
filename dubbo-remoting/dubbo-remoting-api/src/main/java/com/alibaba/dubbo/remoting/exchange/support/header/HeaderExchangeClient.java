@@ -38,7 +38,11 @@ import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
  * DefaultMessageClient
- * 
+ *
+ *
+ * HeaderExchangeClient是HeaderExchangeChannel的包装类，
+ * 作用是封装了心跳检测的逻辑，其他功能不变，均是调用HeaderExchangeChannel的方法
+ *
  * @author william.liangf
  * @author chao.liuc
  */
@@ -65,18 +69,24 @@ public class HeaderExchangeClient implements ExchangeClient {
             throw new IllegalArgumentException("client == null");
         }
         this.client = client;
+
+        // 创建 HeaderExchangeChannel 对象
         this.channel = new HeaderExchangeChannel(client);
+
+        // 以下代码均与心跳检测逻辑有关
         String dubbo = client.getUrl().getParameter(Constants.DUBBO_VERSION_KEY);
         this.heartbeat = client.getUrl().getParameter( Constants.HEARTBEAT_KEY, dubbo != null && dubbo.startsWith("1.0.") ? Constants.DEFAULT_HEARTBEAT : 0 );
         this.heartbeatTimeout = client.getUrl().getParameter( Constants.HEARTBEAT_TIMEOUT_KEY, heartbeat * 3 );
         if ( heartbeatTimeout < heartbeat * 2 ) {
             throw new IllegalStateException( "heartbeatTimeout < heartbeatInterval * 2" );
         }
+        // 开启心跳检测定时器
         startHeatbeatTimer();
     }
 
     public ResponseFuture request(Object request) throws RemotingException {
         //这里channel对象是从构造函数中赋值的，this.channel = new HeaderExchangeChannel(client);
+        // HeaderExchangeChannel#request
         return channel.request(request);
     }
 
@@ -89,6 +99,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     public ResponseFuture request(Object request, int timeout) throws RemotingException {
+        // HeaderExchangeChannel#request
         return channel.request(request, timeout);
     }
 
@@ -159,6 +170,7 @@ public class HeaderExchangeClient implements ExchangeClient {
         return channel.hasAttribute(key);
     }
 
+    //开启心跳检测定时器
     private void startHeatbeatTimer() {
         stopHeartbeatTimer();
         if ( heartbeat > 0 ) {
@@ -187,6 +199,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     private void doClose() {
+        // 停止心跳检测定时器
         stopHeartbeatTimer();
     }
 

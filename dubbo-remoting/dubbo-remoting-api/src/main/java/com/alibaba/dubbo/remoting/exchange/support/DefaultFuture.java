@@ -49,6 +49,7 @@ public class DefaultFuture implements ResponseFuture {
     private static final Map<Long, Channel>       CHANNELS   = new ConcurrentHashMap<Long, Channel>();
 
     //key:requestId val:DefaultFuture
+    //requestId生成见Request#newId：增长到MAX_VALUE时，再增长会变为MIN_VALUE，负数也可以做为ID
     private static final Map<Long, DefaultFuture> FUTURES   = new ConcurrentHashMap<Long, DefaultFuture>();
 
     // invoke id.

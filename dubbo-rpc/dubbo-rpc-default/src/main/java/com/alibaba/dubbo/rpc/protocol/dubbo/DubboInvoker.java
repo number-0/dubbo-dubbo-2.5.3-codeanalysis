@@ -125,6 +125,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
             	RpcContext.getContext().setFuture(null);
                 //实际的请求语句 ，这里的currentClient是 自身对象属性clients[0]值(***看这里****)
                 // 发送请求，得到一个 ResponseFuture 实例，并调用该实例的 get 方法进行等待
+                //ReferenceCountExchangeClient#request
                 return (Result) currentClient.request(inv, timeout).get();
             }
         } catch (TimeoutException e) {

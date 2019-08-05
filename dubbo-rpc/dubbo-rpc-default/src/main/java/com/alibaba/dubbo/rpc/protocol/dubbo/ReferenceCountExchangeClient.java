@@ -29,6 +29,9 @@ import com.alibaba.dubbo.remoting.exchange.ExchangeHandler;
 import com.alibaba.dubbo.remoting.exchange.ResponseFuture;
 
 /**
+ *
+ * ReferenceCountExchangeClient是HeaderExchangeClient的包装类，
+ * 内部仅维护了一个计数器，其他功能不变，均是调用HeaderExchangeClient的方法
  * dubbo protocol support class.
  * 
  * @author chao.liuc
@@ -41,7 +44,9 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     private final URL url;
     
 //    private final ExchangeHandler handler;
-    
+
+    //引用计数变量，每当该ReferenceCountExchangeClient对象被引用一次，referenceCount会进行自增
+    // 每当close方法被调用时，referenceCount进行自减
     private final AtomicInteger refenceCount = new AtomicInteger(0);
     
     private final ConcurrentMap<String, LazyConnectExchangeClient> ghostClientMap;
@@ -49,6 +54,7 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     
     public ReferenceCountExchangeClient(ExchangeClient client, ConcurrentMap<String, LazyConnectExchangeClient> ghostClientMap) {
         this.client = client;
+        // 引用计数自增
         refenceCount.incrementAndGet();
         this.url = client.getUrl();
         if (ghostClientMap == null){
@@ -62,6 +68,8 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     }
 
     public ResponseFuture request(Object request) throws RemotingException {
+        // 直接调用被装饰对象的同签名方法
+        //HeaderExchangeClient#request
         return client.request(request);
     }
 
@@ -78,6 +86,8 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     }
 
     public ResponseFuture request(Object request, int timeout) throws RemotingException {
+        // 直接调用被装饰对象的同签名方法
+        //HeaderExchangeClient#request
         return client.request(request, timeout);
     }
 
@@ -132,6 +142,7 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     }
 
     public void close(int timeout) {
+        // referenceCount 自减
         if (refenceCount.decrementAndGet() <= 0){
             if (timeout == 0){
                 client.close();
@@ -165,8 +176,10 @@ final class ReferenceCountExchangeClient implements ExchangeClient {
     public boolean isClosed() {
         return client.isClosed();
     }
-    
+
+    /** 引用计数自增，该方法由外部调用 */
     public void incrementAndGetCount(){
+        // referenceCount 自增
         refenceCount.incrementAndGet();
     }
 }

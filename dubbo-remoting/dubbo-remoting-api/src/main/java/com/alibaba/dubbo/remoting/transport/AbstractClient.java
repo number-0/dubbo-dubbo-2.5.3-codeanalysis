@@ -263,11 +263,14 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
             connect();
         }
         //获取具体channel实例
-        Channel channel = getChannel();
+        // 获取 Channel，getChannel 是一个抽象方法，具体由子类实现，NettyClient#getChannel()
+        Channel channel = getChannel(); //NettyChannel
         //TODO getChannel返回的状态是否包含null需要改进
         if (channel == null || ! channel.isConnected()) {
           throw new RemotingException(this, "message can not send, because channel is closed . url:" + getUrl());
         }
+
+        // 继续向下调用，NettyChannel#send
         channel.send(message, sent);
     }
     

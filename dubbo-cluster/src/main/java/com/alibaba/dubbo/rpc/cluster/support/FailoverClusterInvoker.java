@@ -91,7 +91,8 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             // 设置 invoked 到 RPC 上下文中
             RpcContext.getContext().setInvokers((List)invoked);
             try {
-                // 调用目标 Invoker 的 invoke 方法，InvokerWrapper#invoke
+                // 调用目标 Invoker 的 invoke 方法，InvokerDelegete#invoke(InvokerWrapper#invoke)
+                //InvokerDelegete是在服务引用的时候RegistryDirectory监听provider的子节点，然后创建的，通过调用list方法获得调用的List<Invoker>
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + invocation.getMethodName()
