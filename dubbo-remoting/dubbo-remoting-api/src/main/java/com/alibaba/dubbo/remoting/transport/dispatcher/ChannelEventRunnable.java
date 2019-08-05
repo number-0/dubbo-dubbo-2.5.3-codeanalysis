@@ -52,9 +52,13 @@ public class ChannelEventRunnable implements Runnable {
         this.message = message;
         this.exception = exception;
     }
-    
+
+    /**
+     * 具体逻辑在DecodeHandler#received
+     */
     public void run() {
         switch (state) {
+
             case CONNECTED:
                 try{
                     handler.connected(channel);
@@ -77,8 +81,12 @@ public class ChannelEventRunnable implements Runnable {
                             + ", message is "+ message,e);
                 }
                 break;
+
+            // 检测通道状态，对于请求或响应消息，此时 state = RECEIVED
             case RECEIVED:
                 try{
+                    // 将 channel 和 message 传给 ChannelHandler 对象，进行后续的调用
+                    //DecodeHandler#received
                     handler.received(channel, message);
                 }catch (Exception e) {
                     logger.warn("ChannelEventRunnable handle " + state + " operation error, channel is " + channel

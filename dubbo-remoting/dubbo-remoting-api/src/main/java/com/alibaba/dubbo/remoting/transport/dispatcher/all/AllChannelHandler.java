@@ -32,15 +32,19 @@ public class AllChannelHandler extends WrappedChannelHandler {
         super(handler, url);
     }
 
+    /** 处理连接事件 */
     public void connected(Channel channel) throws RemotingException {
+        // 获取线程池
         ExecutorService cexecutor = getExecutorService(); 
         try{
+            // 将连接事件派发到线程池中处理
             cexecutor.execute(new ChannelEventRunnable(channel, handler ,ChannelState.CONNECTED));
         }catch (Throwable t) {
             throw new ExecutionException("connect event", channel, getClass()+" error when process connected event ." , t);
         }
     }
-    
+
+    /** 处理断开事件 */
     public void disconnected(Channel channel) throws RemotingException {
         ExecutorService cexecutor = getExecutorService(); 
         try{
@@ -50,15 +54,20 @@ public class AllChannelHandler extends WrappedChannelHandler {
         }
     }
 
+    /** 处理请求和响应消息，这里的 message 变量类型可能是 Request，也可能是 Response */
     public void received(Channel channel, Object message) throws RemotingException {
         ExecutorService cexecutor = getExecutorService();
         try {
+            //由线程池执行后续的调用逻辑，ExecutorService#execute(Runnable)
+            //将请求和响应消息派发到线程池中处理
+            //Request请求对象会被封装 ChannelEventRunnable 中，ChannelEventRunnable 将会是服务调用过程的新起点
             cexecutor.execute(new ChannelEventRunnable(channel, handler, ChannelState.RECEIVED, message));
         } catch (Throwable t) {
             throw new ExecutionException(message, channel, getClass() + " error when process received event .", t);
         }
     }
 
+    /** 处理异常信息 */
     public void caught(Channel channel, Throwable exception) throws RemotingException {
         ExecutorService cexecutor = getExecutorService(); 
         try{
