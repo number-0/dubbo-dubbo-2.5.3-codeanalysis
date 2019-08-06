@@ -222,6 +222,13 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         out.writeObject(inv.getAttachments());
     }
 
+    /**
+     * 对调用结果进行序列化
+     * @param channel
+     * @param out
+     * @param data
+     * @throws IOException
+     */
     @Override
     protected void encodeResponseData(Channel channel, ObjectOutput out, Object data) throws IOException {
         Result result = (Result) data;
