@@ -63,6 +63,16 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /**
+     * 处理请求消息流程：
+     * （1）校验请求合法性，不合法设置Response#status状态码BAD_REQUEST，返回Response
+     * （2）向后调用，获得调用结果，将Response#status状态码OK，调用结果设置到Response#result，返回Response
+     *      调用异常，设置Response#status异常状态码，返回Response
+     * @param channel
+     * @param req
+     * @return
+     * @throws RemotingException
+     */
     Response handleRequest(ExchangeChannel channel, Request req) throws RemotingException {
         Response res = new Response(req.getId(), req.getVersion());
 
@@ -86,7 +96,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         Object msg = req.getData();
         try {
             // handle data.
-            // 继续向下调用
+            // 继续向下调用，DubboProtocol#ExchangeHandler#reply
             Object result = handler.reply(channel, msg);
             // 设置 OK 状态码
             res.setStatus(Response.OK);
@@ -165,6 +175,15 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
 
+    /**
+     * （1）接受的消息为Request请求消息
+     *      a.事件
+     *      b.普通请求：双向通信(handleRequest()、将调用结果返回给消费者)、单向通信(handleRequest())
+     * （2）接受的消息为Response响应消息
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     public void received(Channel channel, Object message) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
