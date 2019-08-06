@@ -227,16 +227,28 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         Result result = (Result) data;
 
         Throwable th = result.getException();
+
+        // 异常信息为空
         if (th == null) {
             Object ret = result.getValue();
+            // 调用结果为空
             if (ret == null) {
+                // 序列化响应类型
                 out.writeByte(RESPONSE_NULL_VALUE);
-            } else {
+            }
+            // 调用结果非空
+            else {
+                // 序列化响应类型
                 out.writeByte(RESPONSE_VALUE);
+                // 序列化调用结果
                 out.writeObject(ret);
             }
-        } else {
+        }
+        // 异常信息非空
+        else {
+            // 序列化响应类型
             out.writeByte(RESPONSE_WITH_EXCEPTION);
+            // 序列化异常对象
             out.writeObject(th);
         }
     }
