@@ -70,6 +70,12 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
      * 请求数据解码：
      * （1）对消息头数据进行解码，并将解码得到的字段封装到Request中
      * （2）消息体数据通过DecodeableRpcInvocation#decode解码：比如调用方法名、attachment、调用参数等等
+     *
+     * 响应数据解码：和请求数据解码很相似
+     * （1）对消息头数据进行解码，并将解码得到的字段封装到Response中
+     * （2）从消息头中获取响应状态码：
+     *      a. 响应状态码为正常OK，则通过DecodeableRpcResult#decode()解码反序列化得到调用结果，并设置到Response对象中
+     *      b. 其他状态码，则反序列化异常信息后设置到Response对象中
      * @param channel
      * @param is
      * @param header
@@ -87,50 +93,71 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         // 通过逻辑与运算得到调用类型，0 - Response，1 - Request
         if ((flag & FLAG_REQUEST) == 0) {
             // decode response.
-            // 对响应结果进行解码，得到 Response 对象。。。
+            // 对响应结果进行解码
+
+            // 创建 Response 对象
             Response res = new Response(id);
+            // 检测事件标志位
             if ((flag & FLAG_EVENT) != 0) {
+                // 设置心跳事件
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
             // get status.
+            // 获取响应状态
             byte status = header[3];
+            // 设置响应状态
             res.setStatus(status);
+            // 如果响应状态为 OK，表明调用过程正常
             if (status == Response.OK) {
                 try {
                     Object data;
                     if (res.isHeartbeat()) {
+                        // 反序列化心跳数据，已废弃
                         data = decodeHeartbeatData(channel, deserialize(s, channel.getUrl(), is));
                     } else if (res.isEvent()) {
+                        // 反序列化事件数据
                         data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
                     } else {
                         DecodeableRpcResult result;
+                        // 根据 url 参数决定是否在 IO 线程上执行解码逻辑
                         if (channel.getUrl().getParameter(
                             Constants.DECODE_IN_IO_THREAD_KEY,
                             Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
+                            // 创建 DecodeableRpcResult 对象
                             result = new DecodeableRpcResult(channel, res, is,
                                                              (Invocation)getRequestData(id), proto);
+                            // 进行后续的解码工作，反序列化调用结果，DecodeableRpcResult#decode()
                             result.decode();
                         } else {
+                            // 创建 DecodeableRpcResult 对象
                             result = new DecodeableRpcResult(channel, res,
                                                              new UnsafeByteArrayInputStream(readMessageData(is)),
                                                              (Invocation) getRequestData(id), proto);
                         }
                         data = result;
                     }
+
+                    // 设置 DecodeableRpcResult 对象到 Response 对象中
                     res.setResult(data);
                 } catch (Throwable t) {
                     if (log.isWarnEnabled()) {
                         log.warn("Decode response failed: " + t.getMessage(), t);
                     }
+                    // 解码过程中出现了错误，此时设置 CLIENT_ERROR 状态码到 Response 对象中
                     res.setStatus(Response.CLIENT_ERROR);
                     res.setErrorMessage(StringUtils.toString(t));
                 }
-            } else {
+            }
+            // 响应状态非 OK，表明调用过程出现了异常
+            else {
+                // 反序列化异常信息，并设置到 Response 对象中
                 res.setErrorMessage(deserialize(s, channel.getUrl(), is).readUTF());
             }
             return res;
         } else {
             // decode request.
+            // 对请求数据进行解码
+
             // 创建 Request 对象
             Request req = new Request(id);
             req.setVersion("2.0.0");
