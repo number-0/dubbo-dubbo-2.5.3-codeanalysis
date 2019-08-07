@@ -249,7 +249,7 @@ public class ExchangeCodec extends TelnetCodec {
      * @throws IOException
      */
     protected void encodeRequest(Channel channel, ChannelBuffer buffer, Request req) throws IOException {
-        //获取要使用的序列化方式，<dubbo:protocol>name属性配置缺省为hessian，基本都配DubboSerialization，通过spi获取
+        //获取要使用的序列化方式，<dubbo:protocol>serialization属性配置缺省为hessian，通过spi获取
         Serialization serialization = getSerialization(channel);
 
         // header.
