@@ -112,6 +112,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     static void handleResponse(Channel channel, Response response) throws RemotingException {
         if (response != null && !response.isHeartbeat()) {
+            // 继续向下调用
             DefaultFuture.received(channel, response);
         }
     }
@@ -211,7 +212,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                     }
                 }
             }
-            // 处理响应对象，服务消费方会执行此处逻辑，后面分析
+            // 处理响应对象，服务消费方会执行此处逻辑
             else if (message instanceof Response) {
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) {
