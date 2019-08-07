@@ -180,7 +180,8 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
      * （1）接受的消息为Request请求消息
      *      a.事件
      *      b.普通请求：双向通信(handleRequest()、将调用结果返回给消费者)、单向通信(handleRequest())
-     * （2）接受的消息为Response响应消息
+     * （2）接受的消息为Response响应消息：handleResponse()
+     *      根据调用编号(responseId=requestId)从Map获取DefaultFuture，调用DefaultFuture内部方法唤醒用户线程
      * @param channel channel.
      * @param message message.
      * @throws RemotingException
