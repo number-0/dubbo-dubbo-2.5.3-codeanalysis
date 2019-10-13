@@ -25,12 +25,15 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
 
 /**
  * AdaptiveExtensionFactory
- * 
+ *
+ * AdaptiveExtensionFactory 内部维护了一个 ExtensionFactory 列表，用于存储其他类型的 ExtensionFactory
+ *
  * @author william.liangf
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
-    
+
+    //AdaptiveExtensionFactory 内部维护了一个 ExtensionFactory 列表，用于存储其他类型的 ExtensionFactory
     private final List<ExtensionFactory> factories;
 
     /**
