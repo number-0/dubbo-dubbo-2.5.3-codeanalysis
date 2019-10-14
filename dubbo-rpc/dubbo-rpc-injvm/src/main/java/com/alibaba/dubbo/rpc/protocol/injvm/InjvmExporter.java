@@ -38,6 +38,8 @@ class InjvmExporter<T> extends AbstractExporter<T> {
         this.exporterMap = exporterMap;
 //         Map<String, Exporter<?>> exporterMap是InjvmProtocol的成员变量
 //            key：invoker.getUrl().getServiceKey()
+//                    key的组成：group/service:version:port，group和version可能为空
+//                    eg：com.kl.dubbotest.provider.export.ProviderExport:20880
 //            val：自身Exporter
         exporterMap.put(key, this);
     }
